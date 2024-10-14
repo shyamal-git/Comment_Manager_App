@@ -453,6 +453,7 @@ const CommentsPage = () => {
   const [selectedComment, setSelectedComment] = useState(null); // For Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editComment, setEditComment] = useState(true);
+  const [isAscending, setIsAscending] = useState(true); // State for sorting
   const [newComment, setNewComment] = useState({
     body: "",
     likes: 0,
@@ -480,7 +481,13 @@ const CommentsPage = () => {
     const addedComment = await addComment(newComment);
     setComments([addedComment, ...comments]);
     setTotalComments(totalComments + 1); // Increase total count
-    setNewComment({ body: "", likes: 0, username: "", postId: 1, userId: 1 }); // Reset form
+    setNewComment({
+      body: "",
+      likes: 0,
+      username: "",
+      postId: 1,
+      userId: 1,
+    }); // Reset form
   };
 
   // Handle Open Modal
@@ -523,6 +530,16 @@ const CommentsPage = () => {
     handleCloseModal();
   };
 
+  // Handle Sorting Toggle
+  const handleSortToggle = () => {
+    setIsAscending(!isAscending);
+  };
+
+  // Sort comments based on `id` and the `isAscending` state
+  const sortedComments = [...comments].sort((a, b) =>
+    isAscending ? a.id - b.id : b.id - a.id
+  );
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Comments Management</h1>
@@ -537,7 +554,7 @@ const CommentsPage = () => {
             setNewComment({ ...newComment, username: e.target.value })
           }
           required
-          className="border p-2 rounded mr-2"
+          className="border p-2 rounded mr-2 mb-2 rounded "
         />
         <input
           type="text"
@@ -547,7 +564,7 @@ const CommentsPage = () => {
             setNewComment({ ...newComment, body: e.target.value })
           }
           required
-          className="border p-2 rounded mr-2"
+          className="border p-2 rounded mr-2 mb-2 rounded "
         />
         <input
           type="number"
@@ -557,19 +574,27 @@ const CommentsPage = () => {
             setNewComment({ ...newComment, likes: Number(e.target.value) })
           }
           required
-          className="border p-2 rounded mr-2"
+          className="border p-2 rounded mr-2 mb-2 rounded "
         />
         <button type="submit" className="bg-blue-500 text-white p-2 rounded">
           Add Comment
         </button>
       </form>
 
+      {/* Button to toggle sorting */}
+      <button
+        onClick={handleSortToggle}
+        className="bg-gray-300 text-black p-2 rounded mb-4"
+      >
+        Sort by ID ({isAscending ? "Ascending" : "Descending"})
+      </button>
+
       {/* Display Comments in Grid */}
       {loading ? (
         <p>Loading...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {comments.map((comment) => (
+          {sortedComments.map((comment) => (
             <div
               key={comment.id}
               className="border p-4 rounded hover:shadow-lg transition"
@@ -607,11 +632,13 @@ const CommentsPage = () => {
       {/* Modal for Viewing/Editing a Comment */}
       {selectedComment && (
         <Modal open={modalOpen} onClose={handleCloseModal}>
-          <Box className="modal-content bg-white p-6 rounded shadow-lg w-1/2 mx-auto mt-20">
+          <Box className="modal-content bg-white p-6 rounded shadow-lg w-full sm:w-3/4 md:w-1/2 lg:w-1/3 xl:w-1/4 mx-auto mt-20">
             <h2 className="text-2xl mb-4">Edit Comment</h2>
 
             {/* Editable Full Name */}
+            <label className="block text-gray-700">Author Name</label>
             <input
+              readOnly
               type="text"
               value={selectedComment.user.fullName}
               onChange={(e) =>
@@ -623,12 +650,14 @@ const CommentsPage = () => {
                   },
                 })
               }
-              className="border p-2 w-full mb-2"
+              className="border p-2 w-full mb-3 rounded"
               placeholder="Author Full Name"
             />
 
             {/* Editable Likes */}
+            <label className="block text-gray-700">Likes</label>
             <input
+              readOnly
               type="number"
               value={selectedComment.likes}
               onChange={(e) =>
@@ -637,11 +666,12 @@ const CommentsPage = () => {
                   likes: Number(e.target.value),
                 })
               }
-              className="border p-2 w-full mb-2"
+              className="border p-2 w-full mb-3 rounded"
               placeholder="Likes"
             />
 
             {/* Editable Comment */}
+            <label className="block text-gray-700">Comment</label>
             <textarea
               value={selectedComment.body}
               disabled={editComment}
@@ -651,26 +681,31 @@ const CommentsPage = () => {
                   body: e.target.value,
                 })
               }
-              className="border p-2 w-full mb-2 disabled"
+              className={`border p-2 w-full mb-3 rounded ${
+                editComment ? "disabled:opacity-50" : ""
+              }`}
               placeholder="Edit Comment"
             />
 
-            <div className="flex justify-between">
+            {/* Buttons */}
+            <div className="flex justify-between mt-4">
               <button
                 onClick={handleEditComment}
-                className="bg-green-500 text-white p-2 rounded"
+                className="bg-green-500 text-white p-2 rounded w-1/3 mr-2"
               >
                 Save Changes
               </button>
+
               <button
-                onClick={(e) => setEditComment(!editComment)}
-                className="bg-yellow-500 text-white p-2 rounded"
+                onClick={() => setEditComment(!editComment)}
+                className="bg-yellow-500 text-white p-2 rounded w-1/3 mr-2"
               >
                 {editComment ? "Edit Comment" : "Cancel"}
               </button>
+
               <button
                 onClick={handleDeleteComment}
-                className="bg-red-500 text-white p-2 rounded"
+                className="bg-red-500 text-white p-2 rounded w-1/3"
               >
                 Delete Comment
               </button>
