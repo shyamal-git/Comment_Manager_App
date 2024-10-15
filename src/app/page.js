@@ -432,7 +432,7 @@
 
 // export default CommentsPage;
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getComments,
   getComment,
@@ -443,6 +443,13 @@ import {
 import TablePagination from "@mui/material/TablePagination";
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
+import CustomToast, {
+  showSuccessToast,
+  showErrorToast,
+  showInfoToast,
+  showWarningToast,
+} from "./Components/CustomToast";
+import Loader from "./Components/Loader";
 
 const CommentsPage = () => {
   const [comments, setComments] = useState([]);
@@ -463,73 +470,107 @@ const CommentsPage = () => {
   });
 
   // Fetch comments for pagination
-  const fetchComments = async () => {
+  const fetchComments = async (signal) => {
     setLoading(true);
-    const data = await getComments(rowsPerPage, page * rowsPerPage);
-    setComments(data.comments);
-    setTotalComments(data.total);
-    setLoading(false);
+    try {
+      const data = await getComments(rowsPerPage, page * rowsPerPage);
+      if (!signal.aborted) {
+        setComments(data.comments);
+        setTotalComments(data.total);
+        showSuccessToast("Comments loaded successfully!");
+      }
+    } catch (error) {
+      showErrorToast("Failed to load comments."); // Show error toast
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchComments();
+    const controller = new AbortController();
+    fetchComments(controller.signal);
+
+    // Clean up the effect to prevent duplicate API calls
+    return () => {
+      controller.abort(); // Abort any ongoing requests
+    };
   }, [page, rowsPerPage]);
 
   // Handle Add Comment
   const handleAddComment = async (e) => {
     e.preventDefault();
-    const addedComment = await addComment(newComment);
-    setComments([addedComment, ...comments]);
-    setTotalComments(totalComments + 1); // Increase total count
-    setNewComment({
-      body: "",
-      likes: 0,
-      username: "",
-      postId: 1,
-      userId: 1,
-    }); // Reset form
+    try {
+      const addedComment = await addComment(newComment);
+      setComments([addedComment, ...comments]);
+      setTotalComments(totalComments + 1); // Increase total count
+      showSuccessToast("Comment added successfully!"); // Show success toast
+      setNewComment({
+        body: "",
+        likes: 0,
+        username: "",
+        postId: 1,
+        userId: 1,
+      }); // Reset form
+    } catch (error) {
+      showErrorToast("Failed to add comment."); // Show error toast
+    }
   };
 
   // Handle Open Modal
   const handleOpenModal = async (commentId) => {
-    const comment = await getComment(commentId);
-    setSelectedComment(comment);
-    setModalOpen(true);
+    try {
+      const comment = await getComment(commentId);
+      setSelectedComment(comment);
+      setModalOpen(true);
+      // showInfoToast("Comment loaded successfully!"); // Show success toast
+    } catch (error) {
+      showErrorToast("Failed to load comment."); // Show error toast
+    }
   };
 
   // Handle Close Modal
   const handleCloseModal = () => {
     setSelectedComment(null);
+    setEditComment(true);
     setModalOpen(false);
   };
 
   // Handle Edit Comment
   const handleEditComment = async (e) => {
     e.preventDefault();
-    const updatedComment = await updateComment(selectedComment.id, {
-      body: selectedComment.body,
-      likes: selectedComment.likes,
-      user: {
-        fullName: selectedComment.user.fullName,
-      },
-    });
-    setComments(
-      comments.map((comment) =>
-        comment.id === updatedComment.id ? updatedComment : comment
-      )
-    );
-    handleCloseModal();
+    try {
+      const updatedComment = await updateComment(selectedComment.id, {
+        body: selectedComment.body,
+        likes: selectedComment.likes,
+        user: {
+          fullName: selectedComment.user.fullName,
+        },
+      });
+      setComments(
+        comments.map((comment) =>
+          comment.id === updatedComment.id ? updatedComment : comment
+        )
+      );
+      showInfoToast("Comment updated successfully!"); // Show success toast
+      handleCloseModal();
+    } catch (error) {
+      showErrorToast("Failed to update comment."); // Show error toast
+    }
   };
 
   // Handle Delete Comment
   const handleDeleteComment = async () => {
-    await deleteComment(selectedComment.id);
-    setComments(
-      comments.filter((comment) => comment.id !== selectedComment.id)
-    );
-    handleCloseModal();
+    try {
+      await deleteComment(selectedComment.id);
+      setComments(
+        comments.filter((comment) => comment.id !== selectedComment.id)
+      );
+      showSuccessToast("Comment deleted successfully!"); // Show success toast
+      handleCloseModal();
+    } catch (error) {
+      showErrorToast("Failed to delete comment."); // Show error toast
+    }
   };
-
   // Handle Sorting Toggle
   const handleSortToggle = () => {
     setIsAscending(!isAscending);
@@ -542,6 +583,8 @@ const CommentsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      <CustomToast />
+      {loading && <Loader />}
       <h1 className="text-2xl font-bold mb-4">Comments Management</h1>
 
       {/* Form to Add a New Comment */}
@@ -593,20 +636,27 @@ const CommentsPage = () => {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {sortedComments.map((comment) => (
             <div
               key={comment.id}
-              className="border p-4 rounded hover:shadow-lg transition"
+              className="customDiv p-4 rounded shadow-2xl hover:shadow-lg transition flex justify-between flex-col"
             >
-              <h2 className="text-lg font-bold">
-                {comment.user?.username || "Unknown User"}
-              </h2>
-              <p className="text-gray-700">{comment.body}</p>
-              <p className="text-sm text-gray-500">Likes: {comment.likes}</p>
+              <div>
+                <h2 className="text-lg font-bold mb-2">
+                  {" "}
+                  Name: {comment.user?.username || "Unknown User"}
+                </h2>
+                <p className="text-gray-500 text-sm mb-2">
+                  Comment : {comment.body}
+                </p>
+                <p className="text-sm text-red-500 mb-4">
+                  Likes: {comment.likes}
+                </p>
+              </div>
               <button
                 onClick={() => handleOpenModal(comment.id)}
-                className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
+                className=" viewButton  mt-2 bg-blue-500 text-white px-3 py-1 rounded"
               >
                 View
               </button>

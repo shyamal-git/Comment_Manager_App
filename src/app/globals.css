@@ -25,3 +25,11 @@ body {
     text-wrap: balance;
   }
 }
+
+.customDiv:hover .viewButton {
+  opacity: 1;
+}
+.viewButton {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
