@@ -348,21 +348,26 @@ const CommentsPage = () => {
             <div className="flex justify-between mt-4">
               <button
                 onClick={handleEditComment}
-                className="bg-green-500 text-white p-2 rounded w-1/3 mr-2"
+                disabled={editComment}
+                className={` bg-green-500 text-white p-2 rounded w-1/3 mr-2 ${
+                  editComment
+                    ? "disabled:opacity-50 cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
               >
                 Save Changes
               </button>
 
               <button
                 onClick={() => setEditComment(!editComment)}
-                className="bg-yellow-500 text-white p-2 rounded w-1/3 mr-2"
+                className="cursor-pointer bg-yellow-500 text-white p-2 rounded w-1/3 mr-2"
               >
                 {editComment ? "Edit Comment" : "Cancel"}
               </button>
 
               <button
                 onClick={handleDeleteComment}
-                className="bg-red-500 text-white p-2 rounded w-1/3"
+                className="cursor-pointer bg-red-500 text-white p-2 rounded w-1/3"
               >
                 Delete Comment
               </button>
