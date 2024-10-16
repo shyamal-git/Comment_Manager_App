@@ -67,21 +67,61 @@ const CommentsPage = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     try {
+      console.log("NewComment = ", newComment);
       const addedComment = await addComment(newComment);
-      setComments([addedComment, ...comments]);
+      setComments([...comments, addedComment]);
       setTotalComments(totalComments + 1); // Increase total count
       showSuccessToast("Comment added successfully!"); // Show success toast
       setNewComment({
         body: "",
         likes: 0,
         username: "",
-        postId: 1,
-        userId: 1,
+        postId: 0,
+        userId: 0,
       }); // Reset form
     } catch (error) {
       showErrorToast("Failed to add comment."); // Show error toast
     }
   };
+  // Handle Add Comment
+  // const handleAddComment = async (e) => {
+  //   e.preventDefault();
+
+  //   // Generate a random 4-digit postId
+  //   const randomPostId = Math.floor(1000 + Math.random() * 9000);
+
+  //   try {
+  //     const updatedComment = {
+  //       ...newComment,
+  //       postId: randomPostId, // Set the generated random postId
+  //     };
+
+  //     console.log("NewComment = ", updatedComment);
+
+  //     // Send the updated comment to the server
+  //     const addedComment = await addComment(updatedComment);
+
+  //     // Show the added comment at the top of the list
+  //     setComments([addedComment, ...comments]);
+
+  //     // Increase the total comments count
+  //     setTotalComments(totalComments + 1);
+
+  //     // Show success toast
+  //     showSuccessToast("Comment added successfully!");
+
+  //     // Reset form
+  //     setNewComment({
+  //       body: "",
+  //       likes: 0,
+  //       username: "",
+  //       postId: 0,
+  //       userId: 0,
+  //     });
+  //   } catch (error) {
+  //     showErrorToast("Failed to add comment."); // Show error toast
+  //   }
+  // };
 
   // Handle Open Modal
   const handleOpenModal = async (commentId) => {
@@ -204,7 +244,7 @@ const CommentsPage = () => {
         <p>Loading...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {sortedComments.map((comment) => (
+          {sortedComments.map((comment, index) => (
             <div
               key={comment.id}
               className="customDiv p-4 rounded shadow-2xl hover:shadow-lg transition flex justify-between flex-col"
@@ -257,12 +297,12 @@ const CommentsPage = () => {
             <input
               readOnly
               type="text"
-              value={selectedComment.user.fullName}
+              value={selectedComment.user?.fullName}
               onChange={(e) =>
                 setSelectedComment({
                   ...selectedComment,
                   user: {
-                    ...selectedComment.user,
+                    ...selectedComment?.user,
                     fullName: e.target.value,
                   },
                 })
